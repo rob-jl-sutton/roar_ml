@@ -10,7 +10,7 @@ import SimpleITK as sitk
 import random
 
 #1.0 perform recursive search to identify available roi files
-matches = glob.glob("D:/**/*roi.nrrd", recursive = True)
+matches = glob.glob("D:/**/*.nrrd", recursive = True)
 ids = [match[3:9] for match in matches]
 ids_unique = list(set(ids))
 os.makedirs(r"C:\Users\suttor\Documents\ROAR workflow 6.0\volumes_patches", exist_ok=True)
@@ -49,6 +49,8 @@ for id in ids_unique:
             images["cta"] = sitk.ReadImage(f)
         elif "dsa_roi.nrrd" in f:
             images["dsa"] = sitk.ReadImage(f)
+        elif "dsa_roi_segmentation.seg.nrrd" in f:
+            images["dsa_seg"] = sitk.ReadImage(f)
 
     if len(images) == 0:
         continue
