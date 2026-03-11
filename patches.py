@@ -1,13 +1,13 @@
 #author:rob-jl-sutton
 #purpose of script is to generate
 #patches for ML training of aneurysm segmentation
-#
 
 #0.0 import modules
 import os.path
 import glob
 import SimpleITK as sitk
 import random
+import numpy as np
 
 #1.0 perform recursive search to identify available roi files
 matches = glob.glob("D:/**/*.nrrd", recursive = True)
@@ -34,7 +34,7 @@ for file_path in matches:
 
 #3.0 specify patch size and adjust number of patches if required
 patch_size = 128 #1d voxel count for cubic patch i.e. for patch_size*patch_size*patch_size voxels
-patches_per_volume = 20
+patches_per_volume = 10
 
 for id in ids_unique:
 
@@ -68,11 +68,46 @@ for id in ids_unique:
         z0 = random.randint(0, size[2] - patch_size)
 
         for modality, img in images.items():
+
+            if modality == "dsa_seg":
+                patch = sitk.RegionOfInterest(
+                    img,
+                    size=[patch_size, patch_size, patch_size],
+                    index=[x0, y0, z0]
+                )
+
+                patch_name = f"{modality}128_{id}_{p:03d}.nrrd"
+                out_path = os.path.join(
+                    r"C:\Users\suttor\Documents\ROAR workflow 6.0\volumes_patches",
+                    patch_name
+                )
+
+                sitk.WriteImage(patch, out_path)
+                continue
+
+            arr_vol = sitk.GetArrayFromImage(img)
+
+            if modality=='cta':
+                vmin = arr_vol.min()
+                vmax = arr_vol.max()
+
+            elif modality in ['mra', 'dsa']:
+                mean = arr_vol.mean()
+                std = arr_vol.std()
+
             patch = sitk.RegionOfInterest(
                 img,
                 size=[patch_size, patch_size, patch_size],
                 index=[x0, y0, z0]
             )
+
+            arr = sitk.GetArrayFromImage(patch)
+
+            if modality == 'cta':
+                arr = (arr - vmin) / (vmax - vmin)
+
+            elif modality in ['mra', 'dsa']:
+                arr = (arr - mean) / std
 
             patch_name = f"{modality}128_{id}_{p:03d}.nrrd"
             out_path = os.path.join(
@@ -80,4 +115,6 @@ for id in ids_unique:
                 patch_name
             )
 
-            sitk.WriteImage(patch, out_path)
+            patch_norm = sitk.GetImageFromArray(arr)
+            patch_norm.CopyInformation(patch)
+            patch = patch_norm
