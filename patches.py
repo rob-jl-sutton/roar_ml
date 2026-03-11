@@ -118,3 +118,4 @@ for id in ids_unique:
             patch_norm = sitk.GetImageFromArray(arr)
             patch_norm.CopyInformation(patch)
             patch = patch_norm
+            sitk.WriteImage(patch, out_path)
